@@ -817,7 +817,7 @@
             <h5>APAAC13 & APAAC5 (Amphiphilic Pseudo-Amino Acid Composition)</h5>
             <ul>
                 <li><strong>Description:</strong> These features encode hydrophobicity, charge, and side-chain properties, reflecting the amphiphilic nature of the peptide.</li>
-                <li><strong>Interpretation:</strong> Higher APAAC values have a positive SHAP impact, indicating they are predictive of AMP activity. This suggests that the model values amphiphilic sequences, which are crucial for disrupting bacterial membranes.</li>
+                <li><strong>Interpretation:</b> Higher APAAC values have a positive SHAP impact, indicating they are predictive of AMP activity. This suggests that the model values amphiphilic sequences, which are crucial for disrupting bacterial membranes.</li>
             </ul>
             <h5>Amino Acid Composition (M, C)</h5>
             <ul>
@@ -885,7 +885,7 @@
                 <li><strong>GearyAuto_ResidueASA30:</strong>
                     <ul>
                         <li><strong>Description:</strong> Indicates the autocorrelation of accessible surface area of residues at a spatial lag of 30.</li>
-                        <li><strong>Interpretation:</b> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
+                        <li><strong>Interpretation:</strong> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
                     </ul>
                 </li>
             </ul>
@@ -899,7 +899,7 @@
             <li><strong>Test 2:</strong> Long Sequence of 99 AAs (Non-AMP) - MKSLLPLAILAALAVAALCYESHESMESYEVSPFTTRRNANTFISPQQRWHAK
                 AQERVRELNKPAQEINREACDDYKLCERYALIYGYNAAYNRYFRQR</li>
             <li><strong>Test 3:</strong> Short Sequence of 51 AAs (P-AMP) - SLQGGAPNFPQPSQQNGGWQVSPDLGRDDKGNTRGQIEIQNKGKDHDFNAG</li>
-            <li><strong>Test 4:</strong> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
+            <li><strong>Test 4:</b> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
             <li><strong>Test 5:</strong> Invalid Characters (eg. X) - 
                 MEKAALIFIGLLLFSTCTQILAQSC(XX).</li>
         </ul>
@@ -947,7 +947,7 @@
         <h3>Step 2: Input the Sequence & Email</h3>
         <ul>
             <li><strong>Direct Input:</strong> Type or paste your sequence into the text area provided.</li>
-            <li><strong>FASTA File Upload:</strong> Click the "Choose File" button and select your .fasta, .fa, or .fna file.</li>
+            <li><strong>FASTA File Upload:</b> Click the "Choose File" button and select your .fasta, .fa, or .fna file.</li>
             <li>The character count will update as you type or upload a sequence.</li>
             <li><strong>Enter Your Email:</strong> Input your email address in the "Your Email Address (for Report)" field. This is required to receive the PDF report.</li>
         </ul>
@@ -987,8 +987,17 @@
 
 <script>
     // ***** START: IMPORTANT CONFIGURATION - YOU MUST EDIT THESE *****
-    const EMAIL_SERVICE_API_URL = "https://nonzeroexit-epic-amp-email-sender.hf.space/send-report-via-email"; 
-    const GRADIO_PREDICTION_SPACE_ID_OR_URL = "https://huggingface.co/spaces/nonzeroexit/AMP-Classifier"; 
+    // --- THIS IS CRUCIAL ---
+    // 1. Replace with the EXACT URL of your deployed proxy server (e.g., from Render.com).
+    // 2. Ensure your proxy server's CORS settings in its `index.js` allow 'https://nonzeroexitali.github.io'.
+    const PROXY_BASE_URL = "https://your-render-app-name.onrender.com"; // <-- UPDATE THIS LINE WITH YOUR PROXY URL
+
+    const EMAIL_SENDER_HF_SPACE_RAW_URL = "https://nonzeroexit-epic-amp-email-sender.hf.space";
+    const GRADIO_HF_SPACE_RAW_URL = "https://huggingface.co/spaces/nonzeroexit/AMP-Classifier"; 
+
+    // Frontend URLs now point to the proxy, which will then forward to Hugging Face
+    const GRADIO_PREDICTION_SPACE_ID_OR_URL = `${PROXY_BASE_URL}/gradio-api`;
+    const EMAIL_SERVICE_API_URL = `${PROXY_BASE_URL}/email-api/send-report-via-email`; // Append API endpoint for clarity
     // ***** END: IMPORTANT CONFIGURATION *****
 
 
@@ -1024,19 +1033,18 @@
     async function initClient() {
         let gradioClientClass; 
         try {
-            // *** CRITICAL UPDATE: Attempting to import from esm.sh ***
-            // This is the most reliable way to get ESM versions of npm packages on a CDN.
-            // It automatically figures out the best version and bundling.
+            // *** RELIABLE IMPORT: Using esm.sh for Gradio Client ***
+            // esm.sh dynamically transpiles npm packages to ESM on the fly, handling
+            // different versions and module structures reliably.
             const module = await import("https://esm.sh/@gradio/client"); 
             
-            // The Gradio Client library (as of recent versions) typically exports the `Client`
-            // class, which then has a static `connect` method.
-            // Check for both named export 'Client' and default export for robustness.
+            // The @gradio/client library typically exports the `Client` class
+            // which has a static `connect` method. Handle potential differences.
             gradioClientClass = module.Client || module.default;
 
             if (!gradioClientClass || typeof gradioClientClass.connect !== 'function') {
-                console.error("Gradio module loaded but does not export a 'Client' class with a static 'connect' method, or a usable default export for connection:", module);
-                throw new Error("Gradio client library export structure not recognizable for current connection method.");
+                console.error("Gradio module loaded but does not export a 'Client' class with a static 'connect' method or a usable default export for connection:", module);
+                throw new Error("Gradio client library export structure not recognizable. This may indicate an extremely new or old Gradio client version has a different API, or a bundling issue with esm.sh.");
             }
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module from esm.sh:", importError);
@@ -1046,13 +1054,26 @@
         }
 
         try {
-            // If `gradioClientClass` is the Client class, we call its static method `connect`.
-            clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
-            console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
+            // Now, connect to the PROXY_BASE_URL which is set up to forward requests
+            // to the actual Hugging Face Space URL with proper CORS headers.
+            // Note: Gradio client needs the *original* Gradio space URL as its `source`,
+            // even if requests go through a proxy. It will parse the `/config` etc. from that URL.
+            // The `fetch` implementation internally handles using the base URL for calls.
+            // THIS LINE IS CRUCIAL: WE PASS THE ORIGINAL HF SPACE URL
+            clientInstance = await gradioClientClass.connect(GRADIO_HF_SPACE_RAW_URL); 
+            console.log("Gradio client for prediction initialized successfully using proxy connection point to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
+            // After successful client initialization, then check if prediction button should be enabled
+            if(sequenceInput && validateSequence(sequenceInput.value)) { // Re-validate after client init to enable button
+                 if(predictBtn) predictBtn.disabled = false;
+            }
+
         } catch (error) {
-            console.error("Failed to initialize Gradio client for prediction:", error);
-            // Re-show previous specific error regarding CORS, as that is the likely next issue.
-            showError(`Failed to connect to the classifier service. The most likely reason is a Cross-Origin (CORS) policy blocking the connection from your GitHub Pages site to Hugging Face Spaces. You might need to update your Gradio app version on Hugging Face Spaces, or set up a proxy.`);
+            console.error("Failed to initialize Gradio client for prediction (via proxy attempt):", error);
+            showError(`Failed to connect to the classifier service. This often happens because:
+             1. Your Gradio Space (${GRADIO_HF_SPACE_RAW_URL}) is down or misconfigured.
+             2. Your proxy server (${PROXY_BASE_URL}) is not running, misconfigured (especially CORS or path rewrite), or is failing to forward requests.
+             3. A network issue preventing connection to either the proxy or Hugging Face.
+             Please check both your Hugging Face Space and your deployed proxy logs.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
@@ -1338,11 +1359,9 @@
     }
 
     async function classifySequence() {
-        // Now clientInstance is set within initClient, which runs on window.onload
-        // So, this check implicitly relies on initClient succeeding.
+        // This check is important as it ensures Gradio client is fully loaded/connected
         if (!clientInstance) {
-            // Re-attempt init or show persistent error if it failed previously.
-            showError("Classifier service is not available. Please try again later. (Client not initialized)");
+            showError("Classifier service is not ready. Please wait a moment and try again.");
             console.error("Gradio client instance is not initialized when classifySequence called.");
             if (predictBtn) { predictBtn.disabled = false; predictBtn.textContent = 'Submit'; }
             return;
@@ -1388,6 +1407,7 @@
         let limeFeaturesForPdfFromPrediction = []; 
 
         try {
+            // clientInstance.predict will now make its API calls to the *proxied* URLs.
             const classificationResult = await clientInstance.predict("/predict", [currentSequence]); 
             // Don't clear interval here immediately, let it run until all processing (including PDF/email) is done or errors out
             console.log("Gradio Result (Prediction):", classificationResult);
@@ -1472,7 +1492,7 @@
         } catch (error) {
             console.error("Error during prediction or processing:", error);
             // countUpIntervalId is cleared in finally
-            showError("Prediction failed: " + (error.message || "Unknown error. Prediction service might be down."));
+            showError("Prediction failed: " + (error.message || "Unknown error. Prediction service might be down. Please check proxy logs."));
             if(ampClassificationOutput) ampClassificationOutput.innerHTML = '<p style="text-align: center; color: var(--clear-button-bg);">Error in Prediction</p>';
             if(additionalDetailsOutput) {
                  additionalDetailsOutput.innerHTML = '<p style="text-align: center; color: var(--clear-button-bg);">Detailed report not available.</p>';
@@ -1527,9 +1547,7 @@
         const toolLogoEl = document.querySelector('.logos-container img');
         if (toolLogoEl && toolLogoEl.src) toolLogoB64 = await getBase64Image(toolLogoEl.src);
         const shapImgEl = document.querySelector('#shap-plot-container img');
-        if (shapImgEl && shapImgEl.src) shapPlotB64 = await getBase64Image(shapImgEl.src); 
-        else if (!shapImgEl) shapPlotB64 = await getBase64Image('shap.png');
-
+        if (shapImgEl && shapImgEl.src) shapPlotB64 = await getBase64Image('shap.png'); // Hardcode this to 'shap.png' to use a local image, if one exists
 
         if (toolLogoB64) {
             const img = new Image(); img.src = toolLogoB64; await new Promise(r=>img.onload=r);
@@ -1731,6 +1749,8 @@
         console.log(`Sending email to ${emailAddr} via API for file ${pdfFileNm}`);
 
         try {
+            // Note: EMAIL_SERVICE_API_URL is already formatted to point to your proxy
+            // (e.g., https://your-render-app-name.onrender.com/email-api/send-report-via-email)
             const response = await fetch(EMAIL_SERVICE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', },
@@ -1742,16 +1762,16 @@
             });
 
             const responseText = await response.text(); 
-            console.log("Raw response from Email API:", responseText);
+            console.log("Raw response from Email API (via proxy):", responseText); // Log that proxy is used
             let resultJson = {};
             try {
                 resultJson = JSON.parse(responseText); 
             } catch (jsonError) {
-                console.error("Email API response not valid JSON:", jsonError, "\nResponse Text:", responseText);
+                console.error("Email API response not valid JSON (via proxy):", jsonError, "\nResponse Text:", responseText);
                 throw new Error(response.statusText || `Email API returned non-JSON. Status: ${response.status}. Check API logs.`);
             }
             
-            console.log("Parsed JSON Email API Result:", resultJson);
+            console.log("Parsed JSON Email API Result (via proxy):", resultJson);
 
             if (response.ok && resultJson.status === "success") {
                  if(emailStatusDiv) {
@@ -1760,14 +1780,14 @@
                  }
             } else {
                  if(emailStatusDiv) {
-                    emailStatusDiv.textContent = `Email sending failed: ${resultJson.message || "Unknown error from email service. Please check API logs."}`;
+                    emailStatusDiv.textContent = `Email sending failed: ${resultJson.message || "Unknown error from email service via proxy."}`;
                     emailStatusDiv.style.color = 'var(--warning-color)';
                  }
             }
         } catch (error) {
-            console.error("Error calling email API:", error);
+            console.error("Error calling email API (via proxy):", error);
             if(emailStatusDiv) {
-                emailStatusDiv.textContent = "Error sending email: " + (error.message || "Email service unavailable or network issue.");
+                emailStatusDiv.textContent = "Error sending email: " + (error.message || "Email service unavailable or network issue on proxy.");
                 emailStatusDiv.style.color = 'var(--warning-color)';
             }
         }
