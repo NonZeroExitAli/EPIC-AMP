@@ -1022,32 +1022,47 @@
     });
 
     async function initClient() {
-        let gradioClientClass; // Renamed for clarity: we expect a class (Client)
+        let gradioClientClass; 
         try {
-            // *** CRITICAL UPDATE: Using the officially specified jSDelivr path AND a more recent stable version ***
-            // Confirmed directly from jSDelivr package browser for @gradio/client@0.14.2
-            // The Client *class* itself is imported, not just a function.
-            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@0.14.2/index.js"); 
+            // *** CRITICAL UPDATE: Using `dist/gradio_client.min.js` path for version 0.14.2 ***
+            // This is a common pattern for unpkg-style pre-bundled JS
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@0.14.2/dist/gradio_client.min.js"); 
             
-            // The Gradio Client library (as of recent versions) exports the `Client`
-            // class, which then has a static `connect` method.
-            // Check for the named export `Client`. If for some reason it's default, fallback to that.
-            gradioClientClass = module.Client || module.default;
-
-            if (!gradioClientClass || typeof gradioClientClass.connect !== 'function') {
-                console.error("Gradio module loaded but does not export a 'Client' class with a static 'connect' method or a usable default export:", module);
-                throw new Error("Gradio client library export structure not as expected. Update Gradio client or verify CDN path.");
+            // The Gradio Client library (as of versions around 0.14.x) might expose the connect function
+            // directly as a named export or default export. Or it could be under Client.
+            // Let's robustly check for both `module.Client` and `module.client`, and if neither exists,
+            // then fall back to `module.default`. Then check if it's connectable.
+            let tempClientFn = module.Client || module.client;
+            if (!tempClientFn) { // If it's not a named 'Client' or 'client', maybe it's a direct default export that acts as the client function
+                tempClientFn = module.default;
             }
+
+            // Now we need to determine if `tempClientFn` is the direct connect function or a class that has .connect
+            if (typeof tempClientFn === 'function' && tempClientFn.name !== 'Client') { // This suggests it IS the connect function (e.g., client() from @gradio/client/index.js if it was working)
+                gradioClientClass = tempClientFn; // Use it directly as the connect function
+            } else if (typeof tempClientFn === 'function' && typeof tempClientFn.connect === 'function') { // This is the expected Gradio.Client class with a static connect method
+                gradioClientClass = tempClientFn;
+            } else {
+                 console.error("Gradio module loaded but structure not as expected for connecting:", module);
+                 throw new Error("Gradio client library export structure unrecognizable for current version.");
+            }
+
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module:", importError);
-            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache. If the issue persists, the CDN or Gradio library might be experiencing a persistent issue, or the URL path has changed again.");
+            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache (hard refresh). If the issue persists, the CDN or Gradio library might be experiencing a persistent issue, or its URL path/packaging has changed significantly.");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
 
         try {
-            // Now, we correctly call the static `connect` method on the `Client` class.
-            clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
+            // If `gradioClientClass` is the Client class, we call its static method `connect`.
+            // If `gradioClientClass` somehow turned out to be the direct function from an earlier check,
+            // calling .connect on it will still fail, so we might need one more conditional check.
+            if (typeof gradioClientClass.connect === 'function') {
+                clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
+            } else { // This implies gradioClientClass *is* the function (e.g. `client(SPACE_URL)` not `Client.connect(SPACE_URL)`)
+                clientInstance = await gradioClientClass(GRADIO_PREDICTION_SPACE_ID_OR_URL); // Try calling it directly
+            }
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
