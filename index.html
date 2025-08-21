@@ -263,7 +263,6 @@
     .metrics-table td {
         padding: 0.8rem 0.5rem; 
     }
-
     .metrics-table tr:nth-child(even) {
         background-color: #f9f9f9; 
     }
@@ -1025,18 +1024,19 @@
     async function initClient() {
         let gradioClientFunction;
         try {
-            // Dynamically import the Gradio client module
-            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client/+esm");
+            // *** UPDATED: Using specific version 2.0.1 on jSDelivr for stability ***
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/+esm");
+            
             // Check for named export 'client' or default export
             gradioClientFunction = module.client || module.default;
 
             if (!gradioClientFunction) {
                 console.error("Gradio module loaded but does not export 'client' or a default function:", module);
-                throw new Error("Gradio client function not found in module exports.");
+                throw new Error("Gradio client function not found in module exports. This may be an issue with the Gradio client module itself.");
             }
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module:", importError);
-            showError("Could not load core prediction library. Please check your internet connection or the module source.");
+            showError("Could not load core prediction library (dynamic import failed). Please check your internet connection or the module source (try clearing cache and trying again).");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
@@ -1046,7 +1046,7 @@
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
-            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. Please check network/backend status.`);
+            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
