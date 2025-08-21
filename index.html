@@ -862,7 +862,7 @@
                 </li>
                 <li><strong>PolarizabilityD3001 & NormalizedVDWVD3001:</strong>
                     <ul>
-                        <li><strong>Description:</strong> These features relate to electronic distribution (Polarizability) and steric effects (NormalizedVDWVD) of the peptide.</li>
+                        <li><strong>Description:</b> These features relate to electronic distribution (Polarizability) and steric effects (NormalizedVDWVD) of the peptide.</li>
                         <li><strong>Interpretation:</strong> These properties impact membrane penetration and peptide-membrane interactions. Their positive SHAP values suggest they are important for AMP activity, possibly by influencing how the peptide inserts into and destabilizes membranes.</li>
                     </ul>
                 </li>
@@ -885,7 +885,7 @@
                 <li><strong>GearyAuto_ResidueASA30:</strong>
                     <ul>
                         <li><strong>Description:</strong> Indicates the autocorrelation of accessible surface area of residues at a spatial lag of 30.</li>
-                        <li><strong>Interpretation:</strong> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
+                        <li><strong>Interpretation:</b> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
                     </ul>
                 </li>
             </ul>
@@ -899,7 +899,7 @@
             <li><strong>Test 2:</strong> Long Sequence of 99 AAs (Non-AMP) - MKSLLPLAILAALAVAALCYESHESMESYEVSPFTTRRNANTFISPQQRWHAK
                 AQERVRELNKPAQEINREACDDYKLCERYALIYGYNAAYNRYFRQR</li>
             <li><strong>Test 3:</strong> Short Sequence of 51 AAs (P-AMP) - SLQGGAPNFPQPSQQNGGWQVSPDLGRDDKGNTRGQIEIQNKGKDHDFNAG</li>
-            <li><strong>Test 4:</b> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
+            <li><strong>Test 4:</strong> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
             <li><strong>Test 5:</strong> Invalid Characters (eg. X) - 
                 MEKAALIFIGLLLFSTCTQILAQSC(XX).</li>
         </ul>
@@ -1022,37 +1022,37 @@
     });
 
     async function initClient() {
-        let gradioClientClass; // This will hold the `Client` class from Gradio.
+        let gradioClientClass; 
         try {
-            // *** CRITICAL UPDATE: Using ESM.sh for reliable Gradio Client ES module serving ***
-            // This URL fetches the `@gradio/client` package as an ES module, including its dependencies.
-            // This is usually more reliable than jSDelivr's generic `+esm` or guessing `dist` paths.
+            // *** CRITICAL UPDATE: Attempting to import from esm.sh ***
+            // This is the most reliable way to get ESM versions of npm packages on a CDN.
+            // It automatically figures out the best version and bundling.
             const module = await import("https://esm.sh/@gradio/client"); 
             
-            // The `Client` class is typically a named export (named "Client").
-            // We provide a fallback to `module.default` in case it's packaged differently (e.g., if the main
-            // export function IS the client function directly, or a UMD build that registers a global).
-            // Based on Gradio's docs for their client, `Client` class with a static `connect` is the standard.
+            // The Gradio Client library (as of recent versions) typically exports the `Client`
+            // class, which then has a static `connect` method.
+            // Check for both named export 'Client' and default export for robustness.
             gradioClientClass = module.Client || module.default;
 
             if (!gradioClientClass || typeof gradioClientClass.connect !== 'function') {
-                console.error("Gradio module loaded but structure not as expected:", module);
-                throw new Error("Gradio client library export structure not recognizable for automatic connection. Please check Gradio client version/documentation.");
+                console.error("Gradio module loaded but does not export a 'Client' class with a static 'connect' method, or a usable default export for connection:", module);
+                throw new Error("Gradio client library export structure not recognizable for current connection method.");
             }
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module from esm.sh:", importError);
-            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache (hard refresh). If the issue persists, the CDN (esm.sh) or Gradio client library might be experiencing a problem.");
+            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache (hard refresh). If the issue persists, the CDN (esm.sh) or Gradio client library itself might have changed or be experiencing issues.");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
 
         try {
-            // Now, we correctly call the static `connect` method on the `Client` class that was imported.
+            // If `gradioClientClass` is the Client class, we call its static method `connect`.
             clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
-            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space backend, a network problem, or an outdated Gradio Space. You may need to restart or rebuild your Hugging Face Space if it's outdated.`);
+            // Re-show previous specific error regarding CORS, as that is the likely next issue.
+            showError(`Failed to connect to the classifier service. The most likely reason is a Cross-Origin (CORS) policy blocking the connection from your GitHub Pages site to Hugging Face Spaces. You might need to update your Gradio app version on Hugging Face Spaces, or set up a proxy.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
