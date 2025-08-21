@@ -879,7 +879,7 @@
                 </li>
                 <li><strong>GearyAuto_Steric30 & GearyAuto_Steric29:</strong>
                     <ul>
-                        <li><strong>Description:Flect peptide backbone flexibility and steric properties at spatial lags of 30 and 29.</li>
+                        <li><strong>Description:</strong> Reflect peptide backbone flexibility and steric properties at spatial lags of 30 and 29.</li>
                         <li><strong>Interpretation:</strong>  These features have a positive SHAP impact, suggesting that a certain degree of peptide backbone flexibility may be beneficial for AMP action. Flexibility could enhance the peptide's ability to interact with and adapt to diverse bacterial membrane structures.</li>
                     </ul>
                 </li>
@@ -986,13 +986,6 @@
     </address>
 </footer>
 
-<script type="module">
-    // *** MODIFIED LINE START ***
-    import client from "https://cdn.jsdelivr.net/npm/@gradio/client/+esm";
-    window.gradio = { client: client }; // Assign the imported 'client' (lowercase c) to the 'client' property (lowercase c)
-    // *** MODIFIED LINE END ***
-</script>
-
 <script>
     // ***** START: IMPORTANT CONFIGURATION - YOU MUST EDIT THESE *****
     const EMAIL_SERVICE_API_URL = "https://nonzeroexit-epic-amp-email-sender.hf.space/send-report-via-email"; 
@@ -1030,14 +1023,26 @@
     });
 
     async function initClient() {
-        if (!window.gradio || !window.gradio.client) {
-            console.error("Gradio client ESM module not loaded correctly.");
-            showError("Core library for prediction service is missing. Please check your internet connection or script tags.");
+        let gradioClientFunction;
+        try {
+            // Dynamically import the Gradio client module
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client/+esm");
+            // Check for named export 'client' or default export
+            gradioClientFunction = module.client || module.default;
+
+            if (!gradioClientFunction) {
+                console.error("Gradio module loaded but does not export 'client' or a default function:", module);
+                throw new Error("Gradio client function not found in module exports.");
+            }
+        } catch (importError) {
+            console.error("Failed to dynamically import Gradio client module:", importError);
+            showError("Could not load core prediction library. Please check your internet connection or the module source.");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
+
         try {
-            clientInstance = await window.gradio.client(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
+            clientInstance = await gradioClientFunction(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
@@ -1327,9 +1332,12 @@
     }
 
     async function classifySequence() {
+        // Now clientInstance is set within initClient, which runs on window.onload
+        // So, this check implicitly relies on initClient succeeding.
         if (!clientInstance) {
-            showError("Classifier service is not available. Please try again later.");
-            console.error("Gradio client instance is not initialized.");
+            // Re-attempt init or show persistent error if it failed previously.
+            showError("Classifier service is not available. Please try again later. (Client not initialized)");
+            console.error("Gradio client instance is not initialized when classifySequence called.");
             if (predictBtn) { predictBtn.disabled = false; predictBtn.textContent = 'Submit'; }
             return;
         }
@@ -1691,7 +1699,7 @@
             reader.readAsDataURL(pdfBlob);
             reader.onloadend = async function() {
                 const base64PdfOnly = reader.result.split(',')[1]; 
-                await sendReportViaApi(recipientEmailForSending, base64PdfOnly, pdfFileName); // Corrected: Passed base64 and filename explicitly
+                await sendReportViaApi(recipientEmailForSending, base64PdfOnly, pdfFileName); 
             };
             reader.onerror = function() {
                 console.error("Error reading PDF blob for email.");
