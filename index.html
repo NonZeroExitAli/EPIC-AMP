@@ -643,7 +643,7 @@
             </div>
             <i class="info-icon" id="info-icon">ⓘ</i>
             <div class="tooltip">
-                Enter the amino acid sequence you want to classify or upload a FASTA file. The sequence must be between 10 and 100 characters long and contain only standard amino acid characters (ACDEFGHIKLMNPQRSTVWY).
+                Enter the amino amino acid sequence you want to classify or upload a FASTA file. The sequence must be between 10 and 100 characters long and contain only standard amino acid characters (ACDEFGHIKLMNPQRSTVWY).
             </div>
         </div>
 
@@ -1024,19 +1024,20 @@
     async function initClient() {
         let gradioClientFunction;
         try {
-            // *** UPDATED: Using specific version 2.0.1 on jSDelivr for stability ***
-            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/+esm");
+            // *** CRITICAL UPDATE: Directly importing the ES module file (main.es.js) ***
+            // This bypasses jSDelivr's problematic +esm bundling for this package/version.
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/dist/main.es.js"); 
             
-            // Check for named export 'client' or default export
+            // Check for named export 'client' (most common) or default export if fallback is needed
             gradioClientFunction = module.client || module.default;
 
             if (!gradioClientFunction) {
                 console.error("Gradio module loaded but does not export 'client' or a default function:", module);
-                throw new Error("Gradio client function not found in module exports. This may be an issue with the Gradio client module itself.");
+                throw new Error("Gradio client function not found in module exports. This indicates a problem with the Gradio client library version or file structure.");
             }
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module:", importError);
-            showError("Could not load core prediction library (dynamic import failed). Please check your internet connection or the module source (try clearing cache and trying again).");
+            showError("Could not load core prediction library. Please check your internet connection or try clearing browser cache. This might also be an issue with the CDN providing the Gradio library.");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
@@ -1046,7 +1047,7 @@
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
-            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space.`);
+            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space backend.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
