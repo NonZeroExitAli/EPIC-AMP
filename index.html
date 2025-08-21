@@ -899,7 +899,7 @@
             <li><strong>Test 2:</strong> Long Sequence of 99 AAs (Non-AMP) - MKSLLPLAILAALAVAALCYESHESMESYEVSPFTTRRNANTFISPQQRWHAK
                 AQERVRELNKPAQEINREACDDYKLCERYALIYGYNAAYNRYFRQR</li>
             <li><strong>Test 3:</strong> Short Sequence of 51 AAs (P-AMP) - SLQGGAPNFPQPSQQNGGWQVSPDLGRDDKGNTRGQIEIQNKGKDHDFNAG</li>
-            <li><strong>Test 4:</strong> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
+            <li><strong>Test 4:</b> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
             <li><strong>Test 5:</strong> Invalid Characters (eg. X) - 
                 MEKAALIFIGLLLFSTCTQILAQSC(XX).</li>
         </ul>
@@ -914,7 +914,7 @@
             <li><strong>High Accuracy, F1-score, and Validation Accuracy:</strong> The model achieved excellent performance metrics on a held-out test set, demonstrating its ability to generalize to unseen data.</li>
             <li><strong>Robustness to Sequence Length Variations:</strong> The model performs consistently well on sequences of varying lengths, within the specified range (10-100 amino acids).</li>
             <li><strong>Generalization Ability:</strong> The model was trained and evaluated on diverse datasets to ensure its ability to classify a broad range of AMP sequences.</li>
-            <li><strong>Robust regression capability:</strong> Assessed using Mean Squared Error (MSE), R-squared (R²), Pearson correlation, and Kendall’s tau, the model demonstrated strong agreement between predicted and true MIC values.</li>
+            <li><strong>Robust regression capability:</b> Assessed using Mean Squared Error (MSE), R-squared (R²), Pearson correlation, and Kendall’s tau, the model demonstrated strong agreement between predicted and true MIC values.</li>
         </ul>
         <h3>Intended Use</h3>
         <p>This tool is intended for research and educational purposes. It can be a valuable resource for researchers studying antimicrobial peptides and developing new therapeutic strategies. However, it is not a replacement for laboratory-based experimental validation.</p>
@@ -970,7 +970,7 @@
             <ul>
                 <li><strong>Invalid Characters:</strong> If you see an error message about invalid characters, double-check that your sequence contains only standard amino acid characters.</li>
                 <li><strong>Sequence Length:</strong> Ensure your sequence is between 10 and 100 characters long.</li>
-                 <li><strong>Invalid FASTA Format:</b> If you encounter an error with a FASTA file, make sure the file is correctly formatted.</li>
+                 <li><strong>Invalid FASTA Format:</strong> If you encounter an error with a FASTA file, make sure the file is correctly formatted.</li>
                  <li><strong>Email Not Received:</strong> Ensure you entered your email address correctly. Also, check your spam/junk folder. If the email service encounters an issue, the "Download Detailed Report (PDF)" link should still be available if the report itself was generated.</li>
             </ul>
     </div>
@@ -1022,35 +1022,36 @@
     });
 
     async function initClient() {
-        let gradioClientFunction;
+        let gradioClientClass; // Renamed for clarity: we expect a class (Client)
         try {
-            // *** CRITICAL UPDATE: Using the officially documented jSDelivr path ***
-            // This is "https://cdn.jsdelivr.net/npm/@gradio/client/index.js"
-            // We still specify a version for stability.
-            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/index.js"); 
+            // *** CRITICAL UPDATE: Using the officially specified jSDelivr path AND a more recent stable version ***
+            // Confirmed directly from jSDelivr package browser for @gradio/client@0.14.2
+            // The Client *class* itself is imported, not just a function.
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@0.14.2/index.js"); 
             
-            // The Gradio docs indicate `Client` (capital C) is the primary export (a class),
-            // which has a static `connect` method.
-            gradioClientFunction = module.Client; 
+            // The Gradio Client library (as of recent versions) exports the `Client`
+            // class, which then has a static `connect` method.
+            // Check for the named export `Client`. If for some reason it's default, fallback to that.
+            gradioClientClass = module.Client || module.default;
 
-            if (!gradioClientFunction || typeof gradioClientFunction.connect !== 'function') {
-                console.error("Gradio module loaded but does not export 'Client' class with 'connect' method or a default connect function:", module);
-                throw new Error("Gradio client 'connect' function not found in module exports. This indicates a potential breaking change in the library or incorrect CDN usage.");
+            if (!gradioClientClass || typeof gradioClientClass.connect !== 'function') {
+                console.error("Gradio module loaded but does not export a 'Client' class with a static 'connect' method or a usable default export:", module);
+                throw new Error("Gradio client library export structure not as expected. Update Gradio client or verify CDN path.");
             }
         } catch (importError) {
             console.error("Failed to dynamically import Gradio client module:", importError);
-            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache. If the issue persists, the CDN or Gradio library might be experiencing problems.");
+            showError("Could not load core prediction library. Please ensure a stable internet connection and try clearing your browser's cache. If the issue persists, the CDN or Gradio library might be experiencing a persistent issue, or the URL path has changed again.");
             if (predictBtn) predictBtn.disabled = true;
             return;
         }
 
         try {
-            // Now correctly call the static `connect` method on the `Client` class
-            clientInstance = await gradioClientFunction.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
+            // Now, we correctly call the static `connect` method on the `Client` class.
+            clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
-            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space backend or a network problem.`);
+            showError(`Failed to connect to the classifier service at ${GRADIO_PREDICTION_SPACE_ID_OR_URL}. This might be a temporary issue with the Hugging Face Space backend, network problem, or an outdated Gradio Space. You may need to rebuild your Gradio Space if it's too old.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
