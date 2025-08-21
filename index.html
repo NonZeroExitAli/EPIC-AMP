@@ -879,7 +879,7 @@
                 </li>
                 <li><strong>GearyAuto_Steric30 & GearyAuto_Steric29:</strong>
                     <ul>
-                        <li><strong>Description:</strong> Reflect peptide backbone flexibility and steric properties at spatial lags of 30 and 29.</li>
+                        <li><strong>Description:Flect peptide backbone flexibility and steric properties at spatial lags of 30 and 29.</li>
                         <li><strong>Interpretation:</strong>  These features have a positive SHAP impact, suggesting that a certain degree of peptide backbone flexibility may be beneficial for AMP action. Flexibility could enhance the peptide's ability to interact with and adapt to diverse bacterial membrane structures.</li>
                     </ul>
                 </li>
@@ -988,8 +988,8 @@
 
 <script type="module">
     // *** MODIFIED LINE START ***
-    import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/+esm";
-    window.gradio = { client: Client }; // Assign the imported 'Client' (capital C) to the 'client' property (lowercase c)
+    import { client } from "https://cdn.jsdelivr.net/npm/@gradio/client/+esm";
+    window.gradio = { client: client }; // Assign the imported 'client' (lowercase c) to the 'client' property (lowercase c)
     // *** MODIFIED LINE END ***
 </script>
 
@@ -1691,7 +1691,7 @@
             reader.readAsDataURL(pdfBlob);
             reader.onloadend = async function() {
                 const base64PdfOnly = reader.result.split(',')[1]; 
-                await sendReportViaApi(recipientEmailForSending, base64PdfOnly, pdfFileName);
+                await sendReportViaApi(recipientEmailForSending, base64PdfOnly, pdfFileName); // Corrected: Passed base64 and filename explicitly
             };
             reader.onerror = function() {
                 console.error("Error reading PDF blob for email.");
