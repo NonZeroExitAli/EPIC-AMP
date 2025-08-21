@@ -643,7 +643,7 @@
             </div>
             <i class="info-icon" id="info-icon">ⓘ</i>
             <div class="tooltip">
-                Enter the amino amino acid sequence you want to classify or upload a FASTA file. The sequence must be between 10 and 100 characters long and contain only standard amino acid characters (ACDEFGHIKLMNPQRSTVWY).
+                Enter the amino acid sequence you want to classify or upload a FASTA file. The sequence must be between 10 and 100 characters long and contain only standard amino acid characters (ACDEFGHIKLMNPQRSTVWY).
             </div>
         </div>
 
@@ -899,7 +899,7 @@
             <li><strong>Test 2:</strong> Long Sequence of 99 AAs (Non-AMP) - MKSLLPLAILAALAVAALCYESHESMESYEVSPFTTRRNANTFISPQQRWHAK
                 AQERVRELNKPAQEINREACDDYKLCERYALIYGYNAAYNRYFRQR</li>
             <li><strong>Test 3:</strong> Short Sequence of 51 AAs (P-AMP) - SLQGGAPNFPQPSQQNGGWQVSPDLGRDDKGNTRGQIEIQNKGKDHDFNAG</li>
-            <li><strong>Test 4:</strong> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
+            <li><strong>Test 4:</b> Short Sequence of 50 AAs (Non-AMP) - MKPLKQKVSITLDEDVIKNLKTLAEECDRSLSQYINLILKEHLKNLDQQ</li>
             <li><strong>Test 5:</strong> Invalid Characters (eg. X) - 
                 MEKAALIFIGLLLFSTCTQILAQSC(XX).</li>
         </ul>
@@ -970,7 +970,7 @@
             <ul>
                 <li><strong>Invalid Characters:</strong> If you see an error message about invalid characters, double-check that your sequence contains only standard amino acid characters.</li>
                 <li><strong>Sequence Length:</strong> Ensure your sequence is between 10 and 100 characters long.</li>
-                 <li><strong>Invalid FASTA Format:</strong> If you encounter an error with a FASTA file, make sure the file is correctly formatted.</li>
+                 <li><strong>Invalid FASTA Format:</b> If you encounter an error with a FASTA file, make sure the file is correctly formatted.</li>
                  <li><strong>Email Not Received:</strong> Ensure you entered your email address correctly. Also, check your spam/junk folder. If the email service encounters an issue, the "Download Detailed Report (PDF)" link should still be available if the report itself was generated.</li>
             </ul>
     </div>
@@ -1024,15 +1024,16 @@
     async function initClient() {
         let gradioClientFunction;
         try {
-            // *** CRITICAL UPDATE: Directly importing the ES module file (main.es.js) ***
+            // *** CRITICAL UPDATE: Directly importing the ES module file (index.min.js) ***
             // This bypasses jSDelivr's problematic +esm bundling for this package/version.
-            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/dist/main.es.js"); 
+            // Using a specific stable version (2.0.1) as well.
+            const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@2.0.1/dist/index.min.js"); 
             
-            // Check for named export 'client' (most common) or default export if fallback is needed
-            gradioClientFunction = module.client || module.default;
+            // According to Gradio docs, 'Client' (capital C) is the primary class for connecting.
+            gradioClientFunction = module.Client || module.default; // Fallback to default in case
 
             if (!gradioClientFunction) {
-                console.error("Gradio module loaded but does not export 'client' or a default function:", module);
+                console.error("Gradio module loaded but does not export 'Client' class or a default function:", module);
                 throw new Error("Gradio client function not found in module exports. This indicates a problem with the Gradio client library version or file structure.");
             }
         } catch (importError) {
@@ -1043,7 +1044,7 @@
         }
 
         try {
-            clientInstance = await gradioClientFunction(GRADIO_PREDICTION_SPACE_ID_OR_URL); 
+            clientInstance = await gradioClientFunction.connect(GRADIO_PREDICTION_SPACE_ID_OR_URL); // Connect using the 'connect' method of the Client class
             console.log("Gradio client for prediction initialized successfully to:", GRADIO_PREDICTION_SPACE_ID_OR_URL);
         } catch (error) {
             console.error("Failed to initialize Gradio client for prediction:", error);
