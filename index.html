@@ -775,6 +775,7 @@
                     <td>0.0517</td>
                     <td>0.5227</td>
                     <td>0.6864</td>
+                    <td>0.6864</td>
                     <td>0.1233</td>
                     <td>0.8311</td>
                     <td>0.6922</td>
@@ -860,7 +861,7 @@
                         <li><strong>Interpretation:</strong> Charge is a significant positive predictor. Most AMPs are cationic, enabling them to interact with negatively charged bacterial membranes. Higher charge, as indicated by positive SHAP values, typically enhances antimicrobial potency.</li>
                     </ul>
                 </li>
-                <li><strong>PolarizabilityD3001 & NormalizedVDWVD3001:</strong>
+                <li><strong>PolarizabilityD3001 & NormalizedVDWVD3001:</b>
                     <ul>
                         <li><strong>Description:</b> These features relate to electronic distribution (Polarizability) and steric effects (NormalizedVDWVD) of the peptide.</li>
                         <li><strong>Interpretation:</strong> These properties impact membrane penetration and peptide-membrane interactions. Their positive SHAP values suggest they are important for AMP activity, possibly by influencing how the peptide inserts into and destabilizes membranes.</li>
@@ -885,7 +886,7 @@
                 <li><strong>GearyAuto_ResidueASA30:</strong>
                     <ul>
                         <li><strong>Description:</strong> Indicates the autocorrelation of accessible surface area of residues at a spatial lag of 30.</li>
-                        <li><strong>Interpretation:</strong> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
+                        <li><strong>Interpretation:</b> Higher autocorrelation of residue accessible surface area is favored. This could mean that a consistent pattern of residue exposure, possibly with higher exposure of charged or polar residues, improves bacterial targeting or membrane interaction.</li>
                     </ul>
                 </li>
             </ul>
@@ -912,7 +913,7 @@
         <p>To identify the most effective model, our team rigorously evaluated over 225 combinations of feature extraction and selection methods across four different machine learning models for each target organism. The evaluation included both classification and regression tasks, with a focus on predicting antimicrobial activity and estimating minimum inhibitory concentration (MIC) values. The final model was selected based on the following criteria:</p>
         <ul>
             <li><strong>High Accuracy, F1-score, and Validation Accuracy:</strong> The model achieved excellent performance metrics on a held-out test set, demonstrating its ability to generalize to unseen data.</li>
-            <li><strong>Robustness to Sequence Length Variations:</strong> The model performs consistently well on sequences of varying lengths, within the specified range (10-100 amino acids).</li>
+            <li><strong>Robustness to Sequence Length Variations:</b> The model performs consistently well on sequences of varying lengths, within the specified range (10-100 amino acids).</li>
             <li><strong>Generalization Ability:</strong> The model was trained and evaluated on diverse datasets to ensure its ability to classify a broad range of AMP sequences.</li>
             <li><strong>Robust regression capability:</b> Assessed using Mean Squared Error (MSE), R-squared (R²), Pearson correlation, and Kendall’s tau, the model demonstrated strong agreement between predicted and true MIC values.</li>
         </ul>
@@ -987,17 +988,26 @@
 
 <script>
     // ***** START: IMPORTANT CONFIGURATION - YOU MUST EDIT THESE *****
-    // --- THIS IS CRUCIAL ---
-    // 1. Replace with the EXACT URL of your deployed proxy server (e.g., from Render.com).
-    //    Your proxy server must handle CORS and forward requests to the Hugging Face Gradio Space.
-    const PROXY_BASE_URL = "https://your-render-app-name.onrender.com"; // <-- UPDATE THIS LINE WITH YOUR PROXY URL
+    // !!! WARNING: This frontend code will NOT work from GitHub Pages due to browser CORS policy !!!
+    // It is attempting to connect directly to Hugging Face, which Hugging Face does not
+    // typically allow from other domains without explicit server-side configuration from them.
+    // If you want this to work, the SAFEST and most reliable way is to host your ENTIRE
+    // application (index.html, CSS, JS, images) directly on a Hugging Face Space.
+    
+    // Leaving this as a placeholder for the email service for now, as requested to ignore email.
+    // However, for SendGrid to work securely, you WILL need a backend proxy server eventually.
+    const PROXY_BASE_URL = "https://your-render-app-name.onrender.com"; // Placeholder, not used for Gradio connection below.
 
-    const EMAIL_SENDER_HF_SPACE_RAW_URL = "https://nonzeroexit-epic-amp-email-sender.hf.space";
     const GRADIO_HF_SPACE_RAW_URL = "https://huggingface.co/spaces/nonzeroexit/AMP-Classifier"; 
+    
+    // This is the direct URL to the Hugging Face Gradio Space.
+    // Your browser will block requests from GitHub Pages to this URL due to CORS.
+    const GRADIO_PREDICTION_TARGET_URL = GRADIO_HF_SPACE_RAW_URL;
 
-    // Frontend URLs now point to the proxy, which will then forward to Hugging Face
-    const GRADIO_PREDICTION_PROXY_URL = `${PROXY_BASE_URL}/gradio-api`; // This is the endpoint on your proxy for Gradio
-    const EMAIL_SERVICE_API_URL = `${PROXY_BASE_URL}/email-api/send-report-via-email`; // This is the endpoint on your proxy for the email service
+    // The email service URL is still configured to use the PROXY_BASE_URL.
+    // This part will also fail or function unexpectedly if PROXY_BASE_URL is invalid
+    // or if the proxy is not configured to handle SendGrid integration.
+    const EMAIL_SERVICE_API_URL = `${PROXY_BASE_URL}/email-api/send-report-via-email`; 
     // ***** END: IMPORTANT CONFIGURATION *****
 
 
@@ -1048,28 +1058,23 @@
         }
 
         try {
-            // Connect to your PROXY URL. Your proxy server is responsible for forwarding
-            // these requests to the actual Hugging Face Gradio Space.
-            clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_PROXY_URL, {
-                // The @gradio/client library might internally derive a base URL from the `host`
-                // you provide. Ensure your proxy routes requests from `/gradio-api` to the root
-                // of the actual Gradio Space.
-                // Depending on your proxy and gradio/client version, you might also specify:
-                // src: GRADIO_HF_SPACE_RAW_URL, 
-            }); 
-            console.log("Gradio client for prediction initialized successfully using proxy connection point to:", GRADIO_PREDICTION_PROXY_URL);
+            // !!! WARNING: This line will cause a CORS error if run from GitHub Pages !!!
+            // It attempts to connect directly to the Hugging Face Gradio Space.
+            clientInstance = await gradioClientClass.connect(GRADIO_PREDICTION_TARGET_URL); 
+            console.log("Gradio client for prediction initialized successfully directly to:", GRADIO_PREDICTION_TARGET_URL);
             
             if(sequenceInput && validateSequence(sequenceInput.value)) { 
                  if(predictBtn) predictBtn.disabled = false;
             }
 
         } catch (error) {
-            console.error("Failed to initialize Gradio client for prediction (via proxy attempt):", error);
-            showError(`Failed to connect to the classifier service. This often happens because:
-             1. Your proxy server (${PROXY_BASE_URL}) is not running, misconfigured (especially CORS or path rewrite), or is failing to forward requests.
-             2. Your Hugging Face Gradio Space (${GRADIO_HF_SPACE_RAW_URL}) is down or misconfigured.
-             3. A network issue preventing connection to either the proxy or Hugging Face.
-             Please ensure your proxy server is correctly deployed and configured.`);
+            console.error("Failed to initialize Gradio client for prediction (direct attempt):", error);
+            showError(`Failed to connect to the classifier service.
+             **Reason: CORS Policy Blocked Access.** Your browser prevents GitHub Pages from directly accessing Hugging Face.
+             To fix this, you either need to:
+             1. Host your entire website (frontend + Gradio) on Hugging Face.
+             2. Deploy a proxy server to forward requests (which you stated you don't want to do).
+             Please check your browser's console for specific CORS error details.`);
             if (predictBtn) predictBtn.disabled = true;
         }
     }
@@ -1366,10 +1371,11 @@
         const recipientEmail = userEmailInput ? userEmailInput.value.trim() : "";
 
         if (!validateSequence(currentSequence)) return;
-        if (!validateEmail(recipientEmail)) {
-            if (userEmailInput) userEmailInput.focus();
-            return;
-        }
+        // Skipping email validation as requested for now, but leaving the input field.
+        // if (!validateEmail(recipientEmail)) {
+        //     if (userEmailInput) userEmailInput.focus();
+        //     return;
+        // }
 
         clearError();
         if (emailErrorDiv) { emailErrorDiv.style.display = 'none'; emailErrorDiv.textContent = ''; }
@@ -1402,7 +1408,7 @@
         let limeFeaturesForPdfFromPrediction = []; 
 
         try {
-            // clientInstance.predict will now make its API calls to the *proxied* URLs.
+            // This call will likely be blocked by CORS if run from GitHub Pages.
             const classificationResult = await clientInstance.predict("/predict", [currentSequence]); 
             console.log("Gradio Result (Prediction):", classificationResult);
 
@@ -1459,22 +1465,15 @@
                 }
             }
             
-            await generatePDFReportAndSendEmail(currentSequence, ampLabelFromPrediction, ampConfidenceFromPrediction, micDataForPdfFromPrediction, limeFeaturesForPdfFromPrediction, recipientEmail); 
+            // Skipping PDF generation and email sending as requested.
+            // await generatePDFReportAndSendEmail(currentSequence, ampLabelFromPrediction, ampConfidenceFromPrediction, micDataForPdfFromPrediction, limeFeaturesForPdfFromPrediction, recipientEmail); 
 
             if(ampClassificationOutput) ampClassificationOutput.innerHTML = `<p style="font-size: 1.3rem; font-weight: bold; color: ${ampLabelFromPrediction.toLowerCase().includes('non-amp') ? 'var(--clear-button-bg)' : 'var(--success-color)'}; margin: 0; text-align: center;">${ampLabelFromPrediction}</p>`;
             
+            // The download link for the PDF will not be available without generatePDFReportAndSendEmail.
             if(additionalDetailsOutput && downloadLink) {
-                if (downloadLink.style.display === 'block' && downloadLink.href && downloadLink.href !== '#' && !downloadLink.href.endsWith('#')) {
-                    additionalDetailsOutput.innerHTML = '<p class="info-message">Detailed report available:</p>';
-                    if (!additionalDetailsOutput.contains(downloadLink)) {
-                        additionalDetailsOutput.appendChild(downloadLink);
-                    }
-                } else { 
-                    additionalDetailsOutput.innerHTML = '<p class="info-message" style="color: var(--warning-color);">Could not generate PDF report for download.</p>';
-                    if (downloadLink.parentNode === additionalDetailsOutput) { 
-                       downloadLink.style.display = 'none';
-                    }
-                }
+                additionalDetailsOutput.innerHTML = '<p class="info-message">PDF report generation skipped as requested.</p>';
+                downloadLink.style.display = 'none';
             }
 
             if (ampLabelFromPrediction.toLowerCase().includes('amp') && !ampLabelFromPrediction.toLowerCase().includes('non-amp')) {
@@ -1484,22 +1483,27 @@
             }
 
         } catch (error) {
-            console.error("Error during prediction or processing:", error);
-            showError("Prediction failed: " + (error.message || "Unknown error. Prediction service might be down. Please check proxy logs."));
+            console.error("Error during prediction or processing (direct attempt):", error);
+            showError(`Prediction failed: ${error.message || "Unknown error."}
+             **IMPORTANT: If you see 'Failed to fetch' or CORS errors in your browser console, it's because GitHub Pages cannot directly access Hugging Face due to security policies.**`);
             if(ampClassificationOutput) ampClassificationOutput.innerHTML = '<p style="text-align: center; color: var(--clear-button-bg);">Error in Prediction</p>';
             if(additionalDetailsOutput) {
-                 additionalDetailsOutput.innerHTML = '<p style="text-align: center; color: var(--clear-button-bg);">Detailed report not available.</p>';
+                 additionalDetailsOutput.innerHTML = '<p style="text-align: center; color: var(--clear-button-bg);">Detailed report not available (due to prediction error or skipped).</p>';
                  if(downloadLink) { 
                      if(!additionalDetailsOutput.contains(downloadLink)) additionalDetailsOutput.appendChild(downloadLink);
                      downloadLink.style.display = 'none';
                  }
             }
-            if (emailStatusDiv) { emailStatusDiv.textContent = 'Email not sent due to prediction error.'; emailStatusDiv.style.color = 'var(--warning-color)';}
+            if (emailStatusDiv) { emailStatusDiv.textContent = 'Email functionality skipped as requested.'; emailStatusDiv.style.color = 'var(--info-color)';}
         } finally {
             if (countUpIntervalId) { clearInterval(countUpIntervalId); countUpIntervalId = null; }
             if (predictBtn) { predictBtn.disabled = false; predictBtn.textContent = 'Submit';}
         }
     }
+
+    // PDF generation related functions (generatePDFReportContent, addPageNumbersAndFooter, getBase64Image)
+    // are left as they are, but generatePDFReportAndSendEmail is commented out in classifySequence.
+    // If you enable email later, you will need a proxy and to uncomment that call.
 
     async function getBase64Image(imgSrc) {
         return new Promise((resolve) => {
@@ -1678,6 +1682,8 @@
         }
     }
 
+    // This function for email sending is present but not called in classifySequence()
+    // as per your request to ignore email for now.
     async function generatePDFReportAndSendEmail(sequenceForPdfAndEmail, predictionForPdfAndEmail, confidenceForPdfAndEmail, micResultsForPdfAndEmail, limeFeaturesForPdfAndEmail, recipientEmailForSending) {
         const pdfDoc = await generatePDFReportContent(sequenceForPdfAndEmail, predictionForPdfAndEmail, confidenceForPdfAndEmail, micResultsForPdfAndEmail, limeFeaturesForPdfAndEmail);
 
@@ -1734,6 +1740,8 @@
         }
     }
 
+    // This function for email sending is present but not called in classifySequence()
+    // as per your request to ignore email for now.
     async function sendReportViaApi(emailAddr, pdfBase64Str, pdfFileNm) {
         if(emailStatusDiv) {
             emailStatusDiv.textContent = 'Sending email...';
@@ -1742,8 +1750,8 @@
         console.log(`Sending email to ${emailAddr} via API for file ${pdfFileNm}`);
 
         try {
-            // This URL points to your deployed proxy server, which should then forward
-            // the request to the actual email sending service (e.g., Hugging Face Space).
+            // This URL still points to a proxy endpoint, but the call to this function
+            // is commented out in classifySequence(), so it won't be executed unless re-enabled.
             const response = await fetch(EMAIL_SERVICE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', },
@@ -1761,7 +1769,7 @@
                 resultJson = JSON.parse(responseText); 
             } catch (jsonError) {
                 console.error("Email API response not valid JSON (via proxy):", jsonError, "\nResponse Text:", responseText);
-                throw new Error(response.statusText || `Email API returned non-JSON. Status: ${response.status}. Check API logs.`);
+                throw new Error(response.statusText || `Email API returned non-JSON. Status: ${response.status}. Check proxy/SendGrid integration logs.`);
             }
             
             console.log("Parsed JSON Email API Result (via proxy):", resultJson);
